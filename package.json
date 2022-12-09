@@ -1,0 +1,55 @@
+{
+  "name": "@mercuriusjs/subscription-client",
+  "version": "11.3.0",
+  "description": "Fastify GraphQL adapter with gateway and subscription support",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "unit": "tap test/*.js",
+    "cov": "tap  --coverage-report=html -J test/*.js",
+    "lint": "npm run lint:standard && npm run lint:typescript",
+    "lint:fix": "standard --fix && npm run lint:typescript -- --fix",
+    "lint:standard": "standard | snazzy",
+    "lint:typescript": "standard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin test/types/*.ts",
+    "typescript": "tsd",
+    "test": "npm run lint && npm run unit && npm run typescript"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mercurius-js/mercurius-subscription-client.git"
+  },
+  "author": "Matteo Collina <hello@matteocollina.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mercurius-js/mercurius-subscription-client/issues"
+  },
+  "homepage": "https://mercurius.dev",
+  "peerDependencies": {
+    "graphql": "^16.0.0"
+  },
+  "devDependencies": {
+    "@sinonjs/fake-timers": "^9.1.2",
+    "@types/node": "^18.0.0",
+    "@types/ws": "^8.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "graphql-ws": "^5.11.2",
+    "mercurius": "^11.4.0",
+    "snazzy": "^9.0.0",
+    "standard": "^17.0.0",
+    "tap": "^16.3.0",
+    "tsd": "^0.24.1",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "@fastify/error": "^3.0.0",
+    "secure-json-parse": "^2.4.0",
+    "ws": "^8.2.2"
+  },
+  "tsd": {
+    "directory": "test/types"
+  },
+  "engines": {
+    "node": ">=14.19.3"
+  }
+}
