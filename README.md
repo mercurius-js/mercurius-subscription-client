@@ -1,6 +1,6 @@
 # @mercurius/subscription-client
 
-A websocket client for `Mercurius` [subscriptions](https://github.com/mercurius-js/mercurius/blob/master/docs/subscriptions.md).
+A websocket client for [Mercurius subscriptions](https://github.com/mercurius-js/mercurius/blob/master/docs/subscriptions.md).
 
 ## Quick start
 
