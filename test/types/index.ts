@@ -15,8 +15,9 @@ const subscriptionClient = new SubscriptionClient('ws://localhost', {
   failedReconnectCallback: async () => {
   },
   connectionInitPayload: {},
-  rewriteConnectionInitPayload: {},
-  keepAlive: true
+  rewriteConnectionInitPayload: () => {
+  },
+  keepAlive: 1000
 })
 
 subscriptionClient.connect()

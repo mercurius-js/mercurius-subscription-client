@@ -9,8 +9,8 @@ export interface SubscriptionClientConfig {
   failedConnectionCallback: (params: any) => Promise<void>,
   failedReconnectCallback: (params: any) => Promise<void>,
   connectionInitPayload: any,
-  rewriteConnectionInitPayload: any,
-  keepAlive: boolean
+  rewriteConnectionInitPayload: (connectionInit: any, context: any) => void,
+  keepAlive: number
 }
 
 export type SubscriptionOperationId = string
