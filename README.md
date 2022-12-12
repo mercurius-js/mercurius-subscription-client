@@ -41,7 +41,7 @@ npm i @mercuriusjs/subscription-client
 Examples:
 
 ```js
-import { SubscriptionClient } from "mercurius-subscription-client";
+import { SubscriptionClient } from "@mercuriusjs/subscription-client";
 
 const uri = `ws://localhost:3000`; // uri of the server
 const client = new SubscriptionClient(uri, {
