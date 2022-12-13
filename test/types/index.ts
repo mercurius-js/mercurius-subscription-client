@@ -23,12 +23,6 @@ const subscriptionClient = new SubscriptionClient('ws://localhost', {
 subscriptionClient.connect()
 subscriptionClient.reconnect()
 subscriptionClient.close(true)
-subscriptionClient.getReconnectDelay()
 subscriptionClient.unsubscribeAll()
-subscriptionClient.sendMessage('opId', 'test', {}, {})
-subscriptionClient.handleMessage({ foo: 'bar' })
-subscriptionClient.startOperation('opId')
 subscriptionClient.createSubscription('query', {}, async () => {
 }, {} as MercuriusContext)
-subscriptionClient.startKeepAliveInterval()
-subscriptionClient.stopKeepAliveInterval()

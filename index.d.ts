@@ -20,15 +20,8 @@ export class SubscriptionClient {
 
   connect(): void
   close (tryReconnect: boolean, closedByUser?: boolean): void
-  getReconnectDelay() : number
   reconnect() : void
   unsubscribe (operationId: SubscriptionOperationId, forceUnsubscribe: boolean) : void
   unsubscribeAll() : void
-  sendMessage (operationId: SubscriptionOperationId, type: any, payload : any, extensions: any) : void
-  handleMessage (message: any) : Promise<void>
-  startOperation (operationId: SubscriptionOperationId) : void
-
   createSubscription (query: string, variables: any, publish: (props: any) => Promise<void>, context: MercuriusContext) : SubscriptionOperationId
-  startKeepAliveInterval() : void
-  stopKeepAliveInterval() : void
 }
