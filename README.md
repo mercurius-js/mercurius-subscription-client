@@ -27,8 +27,8 @@ npm i @mercuriusjs/subscription-client
     - `keepAlive`: `number` The milliseconds value of the connection keep-alive interval. **default**: `false`
 
 - `subscriptionClient.connect()` : `void` Creates a connection to the server.
-- `subscriptionClient.reconnect()` : `void` Attempts to reconnect to the server.
 - `subscriptionClient.close(tryReconnect, closedByUser?)` : `void` Closes the connection to the server.
+- `unsubscribe(operationId, forceUnsubscribe)` : `void` Unsuscribes from the topic with the provided `operationId`.
 - `subscriptionClient.unsubscribeAll()` : `void` Unsuscribes from all topics.
 - `subscriptionClient.createSubscription(query, variables, publish, context)` : `string`. Creates a subscription to a query. Returns the `SubscriptionOperationId`
 
