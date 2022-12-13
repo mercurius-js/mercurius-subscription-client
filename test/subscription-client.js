@@ -541,3 +541,72 @@ test('subscription client does not send message if operation is already started'
 
   function publish (data) { }
 })
+
+test('subscription client sends an error and deletes the associated operation after GQL_ERROR type payload received', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const testPayload = 'test-payload'
+  let client = null
+  const operationId = '1'
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+        ws.send(JSON.stringify({ id: operationId, type: 'error', payload: testPayload }))
+      } else if (data.type === 'error') {
+        t.equal(data.payload, testPayload)
+        t.equal(client.operationsCount[operationId], 1)
+        t.equal(client.operations.get(operationId), undefined)
+        client.close()
+        server.close()
+        t.end()
+      }
+    })
+  })
+
+  client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: false,
+    serviceName: 'test-service',
+    connectionCallback: async () => {
+      client.createSubscription('query', {}, publish)
+    }
+  })
+
+  function publish (data) { }
+})
+
+test('rewriteConnectionInitPayload is called with context', (t) => {
+  const initialPayload = { token: 'some-token' }
+  const rewritePayload = { user: { id: '1' } }
+
+  function rewriteConnectionInitPayload (payload, context) {
+    t.same(payload, initialPayload)
+    t.has(context, rewritePayload)
+    return { user: context.user }
+  }
+
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service',
+    rewriteConnectionInitPayload,
+    connectionCallback: async () => {
+      const operationId = client.createSubscription('query', {}, publish, { ...rewritePayload, _connectionInit: initialPayload })
+      client.startOperation(operationId)
+      server.close()
+      client.close()
+      t.end()
+    }
+  })
+
+  function publish (data) { }
+})
