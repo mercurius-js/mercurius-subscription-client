@@ -5,6 +5,7 @@ const FakeTimers = require('@sinonjs/fake-timers')
 
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
+const { once } = require('events')
 
 test('subscription client initialization fails when a not supported protocol is in the options', (t) => {
   t.plan(1)
@@ -643,4 +644,39 @@ test('rewriteConnectionInitPayload is called with context', (t) => {
   client.connect()
 
   function publish (data) { }
+})
+
+test('event emitters', async (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'connection_init') {
+        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+      } else if (data.type === 'subscribe') {
+        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+      }
+    })
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    maxReconnectAttempts: 10,
+    serviceName: 'test-service'
+  })
+
+  client.connect()
+
+  await t.resolves(async () => await once(client, 'socketOpen'))
+  await t.resolves(async () => await once(client, 'ready'))
+
+  const operationId1 = client.createSubscription('query', {}, () => {})
+
+  client.unsubscribe(operationId1)
+  client.close()
+
+  await t.resolves(async () => await once(client, 'socketClose'))
+  server.close()
 })
