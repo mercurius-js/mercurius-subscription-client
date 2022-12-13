@@ -48,6 +48,8 @@ test('subscription client calls the publish method with the correct payload', (t
       })
     }
   })
+
+  client.connect()
 })
 
 test('subscription client calls the publish method with the correct payload', (t) => {
@@ -83,6 +85,7 @@ test('subscription client calls the publish method with the correct payload', (t
       })
     }
   })
+  client.connect()
 })
 
 test('subscription client calls the publish method with null after GQL_COMPLETE type payload received', (t) => {
@@ -116,6 +119,7 @@ test('subscription client calls the publish method with null after GQL_COMPLETE 
       })
     }
   })
+  client.connect()
 })
 
 test('subscription client tries to reconnect when server closes', (t) => {
@@ -169,6 +173,8 @@ test('subscription client tries to reconnect when server closes', (t) => {
     serviceName: 'test-service',
     connectionCallback
   })
+
+  client.connect()
 })
 
 test('subscription client stops trying reconnecting after maxReconnectAttempts', (t) => {
@@ -189,6 +195,8 @@ test('subscription client stops trying reconnecting after maxReconnectAttempts',
       t.end()
     }
   })
+
+  client.connect()
   server.close()
 })
 
@@ -216,6 +224,8 @@ test('subscription client multiple subscriptions is handled by one operation', {
       client.createSubscription('query', {}, publish)
     }
   })
+
+  client.connect()
 
   function publish (data) {
     client.close()
@@ -260,6 +270,8 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
       client.unsubscribe(operationId1)
     }
   })
+
+  client.connect()
 })
 
 test('subscription client closes the connection after GQL_CONNECTION_ERROR type payload received', (t) => {
@@ -285,6 +297,8 @@ test('subscription client closes the connection after GQL_CONNECTION_ERROR type 
     reconnect: false,
     serviceName: 'test-service'
   })
+
+  client.connect()
 })
 
 test('subscription client connectionInitPayload is correctly passed', (t) => {
@@ -313,6 +327,8 @@ test('subscription client connectionInitPayload is correctly passed', (t) => {
       return connectionInitPayload
     }
   })
+
+  client.connect()
 })
 
 test('subscription client closes the connection if connectionInitPayload throws', (t) => {
@@ -334,6 +350,8 @@ test('subscription client closes the connection if connectionInitPayload throws'
       throw new Error('kaboom')
     }
   })
+
+  client.connect()
 })
 
 test('subscription client sending empty object payload on connection init', (t) => {
@@ -365,6 +383,8 @@ test('subscription client sending empty object payload on connection init', (t) 
       })
     }
   })
+
+  client.connect()
 })
 
 test('subscription client sends GQL_CONNECTION_KEEP_ALIVE when the keep alive option is active', (t) => {
@@ -399,6 +419,8 @@ test('subscription client sends GQL_CONNECTION_KEEP_ALIVE when the keep alive op
     serviceName: 'test-service',
     keepAlive: 1000
   })
+
+  client.connect()
   clock.tick(1000)
 })
 
@@ -444,6 +466,8 @@ test('subscription client not throwing error on GQL_CONNECTION_KEEP_ALIVE type p
       clock.tick(200)
     }
   })
+
+  client.connect()
 })
 
 test('subscription client should throw on createSubscription if connection is not ready', (t) => {
@@ -474,6 +498,8 @@ test('subscription client should throw on createSubscription if connection is no
       t.end()
     }
   })
+
+  client.connect()
 })
 
 test('subscription client should pass the error payload to failedConnectionCallback in case of a connection_error', (t) => {
@@ -502,6 +528,8 @@ test('subscription client should pass the error payload to failedConnectionCallb
       t.end()
     }
   })
+
+  client.connect()
 })
 
 test('subscription client does not send message if operation is already started', (t) => {
@@ -539,6 +567,8 @@ test('subscription client does not send message if operation is already started'
     }
   })
 
+  client.connect()
+
   function publish (data) { }
 })
 
@@ -574,6 +604,8 @@ test('subscription client sends an error and deletes the associated operation af
     }
   })
 
+  client.connect()
+
   function publish (data) { }
 })
 
@@ -607,6 +639,8 @@ test('rewriteConnectionInitPayload is called with context', (t) => {
       t.end()
     }
   })
+
+  client.connect()
 
   function publish (data) { }
 })
