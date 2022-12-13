@@ -13,8 +13,8 @@ npm i @mercuriusjs/subscription-client
 `SubscriptionClient`: `class`
 
 - The SubscriptionClient class constructor takes two parameters:
-    - `uri`: `string` The uri of the websocket server.
-    - `config`: `object` the configuration object.
+  - `uri`: `string` The uri of the websocket server.
+  - `config`: `object` the configuration object.
     - `protocols`: `Array<string>` The WebSocket sub-protocol. **default**: `graphql-transport-ws`.
     - `reconnect`: `boolean` Enables the client to attempt to reconnect if the connection is interrupted. **default**: `false`.
     - `maxReconnectAttempts`: `number` The maximum amount of attempts the client should perform when reconnecting. **default**: `Infinity`.
