@@ -21,7 +21,6 @@ const subscriptionClient = new SubscriptionClient('ws://localhost', {
 })
 
 subscriptionClient.connect()
-subscriptionClient.reconnect()
 subscriptionClient.close(true)
 subscriptionClient.unsubscribeAll()
 subscriptionClient.createSubscription('query', {}, async () => {
