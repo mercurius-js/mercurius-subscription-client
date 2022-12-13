@@ -29,14 +29,8 @@ npm i @mercuriusjs/subscription-client
 - `subscriptionClient.connect()` : `void` Creates a connection to the server.
 - `subscriptionClient.reconnect()` : `void` Attempts to reconnect to the server.
 - `subscriptionClient.close(tryReconnect, closedByUser?)` : `void` Closes the connection to the server.
-- `subscriptionClient.getReconnectDelay()` : `number` Returns the reconnection delay as milliseconds
 - `subscriptionClient.unsubscribeAll()` : `void` Unsuscribes from all topics.
-- `subscriptionClient.sendMessage(operationId, type, payload, extensions)` : `void` Sends a message to the server.
-- `subscriptionClient.handleMessage(message)` : `Promise<void>`
-- `subscriptionClient.startOperation(operationId)` : `void`
 - `subscriptionClient.createSubscription(query, variables, publish, context)` : `string`. Creates a subscription to a query. Returns the `SubscriptionOperationId`
-- `subscriptionClient.startKeepAliveInterval()` : `void` Starts sending keep-alive message to the server. The interval is `keepAlive` value.
-- `subscriptionClient.stopKeepAliveInterval()` : `void` Stops the keep-alive stared with `startKeepAliveInterval`.
 
 Examples:
 
@@ -56,4 +50,6 @@ const client = new SubscriptionClient(uri, {
     });
   },
 });
+
+
 ```

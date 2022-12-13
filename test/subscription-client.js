@@ -507,7 +507,7 @@ test('subscription client should pass the error payload to failedConnectionCallb
 test('subscription client does not send message if operation is already started', (t) => {
   let sent = false
   class MockSubscriptionClient extends SubscriptionClient {
-    sendMessage (operationId, type, payload) {
+    _sendMessage (operationId, type, payload) {
       if (operationId && type === 'subscribe') {
         if (!sent) {
           t.pass()
@@ -532,7 +532,7 @@ test('subscription client does not send message if operation is already started'
     serviceName: 'test-service',
     connectionCallback: async () => {
       const operationId = client.createSubscription('query', {}, publish)
-      client.startOperation(operationId)
+      client._startOperation(operationId)
       server.close()
       client.close()
       t.end()
@@ -601,7 +601,7 @@ test('rewriteConnectionInitPayload is called with context', (t) => {
     rewriteConnectionInitPayload,
     connectionCallback: async () => {
       const operationId = client.createSubscription('query', {}, publish, { ...rewritePayload, _connectionInit: initialPayload })
-      client.startOperation(operationId)
+      client._startOperation(operationId)
       server.close()
       client.close()
       t.end()
