@@ -1,18 +1,22 @@
 'use strict'
 const { test } = require('tap')
-
 const FakeTimers = require('@sinonjs/fake-timers')
-
 const SubscriptionClient = require('../lib/subscription-client')
 const WS = require('ws')
 const { once } = require('events')
+const mercurius = require('mercurius')
+const Fastify = require('fastify')
 
 test('subscription client initialization fails when a not supported protocol is in the options', (t) => {
   t.plan(1)
-  t.throws(() => new SubscriptionClient('ws://localhost:1234', {
-    protocols: ['unsupported-protocol'],
-    serviceName: 'test-service'
-  }), 'Invalid options: unsupported-protocol is not a valid gateway subscription protocol')
+  t.throws(
+    () =>
+      new SubscriptionClient('ws://localhost:1234', {
+        protocols: ['unsupported-protocol'],
+        serviceName: 'test-service'
+      }),
+    'Invalid options: unsupported-protocol is not a valid gateway subscription protocol'
+  )
 })
 
 test('subscription client calls the publish method with the correct payload', (t) => {
@@ -25,7 +29,13 @@ test('subscription client calls the publish method with the correct payload', (t
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'subscribe') {
-        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+        ws.send(
+          JSON.stringify({
+            id: '1',
+            type: 'next',
+            payload: { data: { foo: 'bar' } }
+          })
+        )
       }
     })
   })
@@ -63,7 +73,13 @@ test('subscription client calls the publish method with the correct payload', (t
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'subscribe') {
-        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+        ws.send(
+          JSON.stringify({
+            id: '1',
+            type: 'next',
+            payload: { data: { foo: 'bar' } }
+          })
+        )
       }
     })
   })
@@ -201,41 +217,45 @@ test('subscription client stops trying reconnecting after maxReconnectAttempts',
   server.close()
 })
 
-test('subscription client multiple subscriptions is handled by one operation', { only: true }, t => {
-  const server = new WS.Server({ port: 0 })
-  const port = server.address().port
+test(
+  'subscription client multiple subscriptions is handled by one operation',
+  { only: true },
+  (t) => {
+    const server = new WS.Server({ port: 0 })
+    const port = server.address().port
 
-  server.on('connection', function connection (ws) {
-    ws.on('message', function incoming (message, isBinary) {
-      const data = JSON.parse(isBinary ? message : message.toString())
-      if (data.type === 'connection_init') {
-        ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-      } else if (data.type === 'subscribe') {
-        ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+    server.on('connection', function connection (ws) {
+      ws.on('message', function incoming (message, isBinary) {
+        const data = JSON.parse(isBinary ? message : message.toString())
+        if (data.type === 'connection_init') {
+          ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+        } else if (data.type === 'subscribe') {
+          ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+        }
+      })
+    })
+
+    const client = new SubscriptionClient(`ws://localhost:${port}`, {
+      reconnect: true,
+      maxReconnectAttempts: 10,
+      serviceName: 'test-service',
+      connectionCallback: () => {
+        client.createSubscription('query', {}, publish)
+        client.createSubscription('query', {}, publish)
       }
     })
-  })
 
-  const client = new SubscriptionClient(`ws://localhost:${port}`, {
-    reconnect: true,
-    maxReconnectAttempts: 10,
-    serviceName: 'test-service',
-    connectionCallback: () => {
-      client.createSubscription('query', {}, publish)
-      client.createSubscription('query', {}, publish)
+    client.connect()
+
+    function publish (data) {
+      client.close()
+      server.close()
+      t.end()
     }
-  })
-
-  client.connect()
-
-  function publish (data) {
-    client.close()
-    server.close()
-    t.end()
   }
-})
+)
 
-test('subscription client multiple subscriptions unsubscribe removes only one subscription', t => {
+test('subscription client multiple subscriptions unsubscribe removes only one subscription', (t) => {
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
 
@@ -512,7 +532,13 @@ test('subscription client should pass the error payload to failedConnectionCallb
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'connection_init') {
-        ws.send(JSON.stringify({ id: undefined, type: 'connection_error', payload: errorPayload }))
+        ws.send(
+          JSON.stringify({
+            id: undefined,
+            type: 'connection_error',
+            payload: errorPayload
+          })
+        )
       }
     })
   })
@@ -570,7 +596,7 @@ test('subscription client does not send message if operation is already started'
 
   client.connect()
 
-  function publish (data) { }
+  function publish (data) {}
 })
 
 test('subscription client sends an error and deletes the associated operation after GQL_ERROR type payload received', (t) => {
@@ -585,7 +611,13 @@ test('subscription client sends an error and deletes the associated operation af
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
-        ws.send(JSON.stringify({ id: operationId, type: 'error', payload: testPayload }))
+        ws.send(
+          JSON.stringify({
+            id: operationId,
+            type: 'error',
+            payload: testPayload
+          })
+        )
       } else if (data.type === 'error') {
         t.equal(data.payload, testPayload)
         t.equal(client.operationsCount[operationId], 1)
@@ -607,7 +639,7 @@ test('subscription client sends an error and deletes the associated operation af
 
   client.connect()
 
-  function publish (data) { }
+  function publish (data) {}
 })
 
 test('rewriteConnectionInitPayload is called with context', (t) => {
@@ -633,7 +665,10 @@ test('rewriteConnectionInitPayload is called with context', (t) => {
     serviceName: 'test-service',
     rewriteConnectionInitPayload,
     connectionCallback: async () => {
-      const operationId = client.createSubscription('query', {}, publish, { ...rewritePayload, _connectionInit: initialPayload })
+      const operationId = client.createSubscription('query', {}, publish, {
+        ...rewritePayload,
+        _connectionInit: initialPayload
+      })
       client._startOperation(operationId)
       server.close()
       client.close()
@@ -643,7 +678,7 @@ test('rewriteConnectionInitPayload is called with context', (t) => {
 
   client.connect()
 
-  function publish (data) { }
+  function publish (data) {}
 })
 
 test('event emitters', async (t) => {
@@ -656,7 +691,13 @@ test('event emitters', async (t) => {
       if (data.type === 'connection_init') {
         ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
       } else if (data.type === 'subscribe') {
-        ws.send(JSON.stringify({ id: '1', type: 'next', payload: { data: { foo: 'bar' } } }))
+        ws.send(
+          JSON.stringify({
+            id: '1',
+            type: 'next',
+            payload: { data: { foo: 'bar' } }
+          })
+        )
       }
     })
   })
@@ -679,4 +720,122 @@ test('event emitters', async (t) => {
 
   await t.resolves(async () => await once(client, 'socketClose'))
   server.close()
+})
+
+test('mercurius integration', async (t) => {
+  const app = Fastify()
+
+  const schema = `
+  type Notification {
+    id: ID!
+    message: String
+  }
+
+  type Query {
+    notifications: [Notification]
+  }
+
+  type Mutation {
+    addNotification(message: String): Notification
+  }
+
+  type Subscription {
+    notificationAdded: Notification
+  }
+`
+
+  let idCount = 1
+  const notifications = [
+    {
+      id: idCount,
+      message: 'Notification message'
+    }
+  ]
+
+  const resolvers = {
+    Query: {
+      notifications: () => notifications
+    },
+    Mutation: {
+      addNotification: async (_, { message }, { pubsub }) => {
+        const id = idCount++
+        const notification = {
+          id,
+          message
+        }
+        notifications.push(notification)
+        await pubsub.publish({
+          topic: 'NOTIFICATION_ADDED_1',
+          payload: {
+            notificationAdded: notification
+          }
+        })
+
+        return notification
+      }
+    },
+    Subscription: {
+      notificationAdded: {
+        subscribe: async (root, args, { pubsub }) =>
+          await pubsub.subscribe('NOTIFICATION_ADDED')
+      }
+    }
+  }
+
+  app.register(mercurius, {
+    schema,
+    resolvers,
+    subscription: true
+  })
+
+  await app.listen({ port: 0 })
+
+  const client = new SubscriptionClient(
+    `ws://localhost:${app.server.address().port}/graphql`,
+    {
+      reconnect: true,
+      maxReconnectAttempts: 10
+    }
+  )
+
+  client.connect()
+
+  await once(client, 'ready')
+
+  const subscription = `
+    subscription {
+      notificationAdded {
+        id
+        message
+      }
+    }`
+
+  const operationId = client.createSubscription(subscription, {}, async (data) => {
+    // expect to see data from subscription here
+    console.log('DATA', data)
+    // client.unsubscribe(operationId)
+    // client.close()
+    // app.close()
+    // t.end()
+  })
+
+  const query = `
+    mutation {
+      addNotification(message: "test") {
+        id
+        message
+      }
+    }`
+
+  await app.inject({
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    url: '/graphql',
+    body: JSON.stringify({ query })
+  })
+
+  client.unsubscribe(operationId)
+  client.close()
+  app.close()
+  t.end()
 })

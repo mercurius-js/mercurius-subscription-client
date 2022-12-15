@@ -42,8 +42,9 @@ npm i @mercuriusjs/subscription-client
 
 Examples:
 
-```js
-import { SubscriptionClient } from "@mercuriusjs/subscription-client";
+```cjs
+const { SubscriptionClient } = require( "@mercuriusjs/subscription-client")
+const { once } = require('events') 
 
 const client = new SubscriptionClient('ws://localhost:3000', {
   protocols: ["graphql-transport-ws"],
