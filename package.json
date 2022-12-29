@@ -1,7 +1,7 @@
 {
   "name": "@mercuriusjs/subscription-client",
   "version": "0.0.1",
-  "description": "Fastify GraphQL adapter with gateway and subscription support",
+  "description": "GraphQL Subscription client",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
