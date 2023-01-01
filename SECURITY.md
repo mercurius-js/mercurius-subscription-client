@@ -6,7 +6,7 @@ Mercurius project and all modules within the Mercurius organization.
 ## Reporting vulnerabilities
 
 Individuals who find potential vulnerabilities in Mercurius are invited
-to report them via GitHub at https://github.com/mercurius-js/mercurius/security/advisories
+to report them via GitHub at https://github.com/mercurius-js/mercurius-subscription-client/security
 or via email at matteo.collina@gmail.com.
 
 ### Strict measures when reporting vulnerabilities
