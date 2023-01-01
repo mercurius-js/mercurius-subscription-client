@@ -1,6 +1,6 @@
 {
   "name": "@mercuriusjs/subscription-client",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "GraphQL subscription client based on Mercurius",
   "main": "index.js",
   "types": "index.d.ts",
