@@ -1,5 +1,5 @@
-import { MercuriusContext } from "mercurius";
-import { EventEmitter } from "stream";
+import { MercuriusContext } from 'mercurius'
+import { EventEmitter } from 'stream'
 
 export interface SubscriptionClientConfig {
   protocols?: Array<string>,

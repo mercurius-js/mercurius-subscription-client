@@ -1,7 +1,7 @@
 import { MercuriusContext } from 'mercurius'
 import { GRAPHQL_TRANSPORT_WS_PROTOCOL } from 'graphql-ws'
-import { expectAssignable, expectType } from 'tsd'
-import { SubscriptionClient, SubscriptionClientConfig, SubscriptionOperationId } from '../..'
+import { expect } from 'tstyche'
+import { SubscriptionClient, SubscriptionClientConfig, SubscriptionOperationId } from '..'
 
 const config = {
   protocols: [GRAPHQL_TRANSPORT_WS_PROTOCOL],
@@ -20,20 +20,18 @@ const config = {
   keepAlive: 1000
 }
 
-expectAssignable<SubscriptionClientConfig>(config)
+expect<SubscriptionClientConfig>().type.toBeAssignableFrom(config)
 
-expectAssignable<SubscriptionClientConfig>({
-  serviceName: 'test'
-})
+expect<SubscriptionClientConfig>().type.toBeAssignableFrom({ serviceName: 'test' })
 
 const subscriptionClient = new SubscriptionClient('ws://localhost', config)
 
-expectType<void>(subscriptionClient.connect())
-expectType<void>(subscriptionClient.close(true))
-expectType<void>(subscriptionClient.unsubscribeAll())
+expect(subscriptionClient.connect()).type.toBe<void>()
+expect(subscriptionClient.close(true)).type.toBe<void>()
+expect(subscriptionClient.unsubscribeAll()).type.toBe<void>()
 
 const subscription = subscriptionClient.createSubscription('query', {}, async () => {
 }, {} as MercuriusContext)
 
-expectType<SubscriptionOperationId>(subscription)
-expectType<void>(subscriptionClient.unsubscribe(subscription))
+expect(subscription).type.toBe<SubscriptionOperationId>()
+expect(subscriptionClient.unsubscribe(subscription)).type.toBe<void>()
