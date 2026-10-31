@@ -839,3 +839,65 @@ test('mercurius integration', async (t) => {
   app.close()
   t.end()
 })
+
+test('subscription client re-evaluates rewriteConnectionInitPayload before replaying operations after a reconnect', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const started = []
+  let connections = 0
+
+  server.on('connection', function connection (ws) {
+    connections++
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type === 'subscribe') {
+        started.push({ connection: connections, id: data.id, connectionInit: data.extensions[0].payload })
+      }
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const alice = { token: 'alice', expired: false }
+  const bob = { token: 'bob', expired: false }
+  const published = []
+  let aliceId
+  let bobId
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    reconnect: true,
+    serviceName: 'test-service',
+    rewriteConnectionInitPayload: (_, context) => {
+      if (context.expired) {
+        throw new Error('expired')
+      }
+      return { authorization: context.token }
+    },
+    connectionCallback: () => {
+      if (connections === 1) {
+        aliceId = client.createSubscription('query', { user: 'alice' }, (data) => published.push(data), alice)
+        bobId = client.createSubscription('query', { user: 'bob' }, (data) => published.push(data), bob)
+
+        // alice's credential expires, then the connection drops
+        alice.expired = true
+        setTimeout(() => {
+          for (const ws of server.clients) ws.terminate()
+        }, 20)
+        return
+      }
+
+      setTimeout(() => {
+        t.same(started.filter((s) => s.connection === 2), [
+          { connection: 2, id: bobId, connectionInit: { authorization: 'bob' } }
+        ])
+        t.equal(client.operations.has(aliceId), false)
+        t.same(published, [{ topic: `test-service_${aliceId}`, payload: null }])
+        client.close()
+        server.close()
+        t.end()
+      }, 50)
+    }
+  })
+
+  client.connect()
+})
