@@ -263,7 +263,15 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'complete') {
+        // echo 'complete' late, then ping: the client answers the ping only
+        // after it has handled the echoed 'complete'
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+        ws.send(JSON.stringify({ type: 'ping' }))
+      } else if (data.type === 'pong') {
+        // the late 'complete' was ignored: publish was not called
+        client.close()
+        server.close()
+        t.end()
       }
     })
 
@@ -276,9 +284,7 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
     serviceName: 'test-service',
     connectionCallback: () => {
       function publish (data) {
-        client.close()
-        server.close()
-        t.end()
+        t.fail('a stopped operation must not publish')
       }
 
       const operationId1 = client.createSubscription('query', {}, publish)
@@ -287,8 +293,10 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
 
       client.unsubscribe(operationId1)
       t.equal(client.operationsCount[operationId1], 1)
+      t.equal(client.operations.has(operationId1), true)
 
       client.unsubscribe(operationId1)
+      t.equal(client.operations.has(operationId1), false)
     }
   })
 
@@ -838,4 +846,56 @@ test('mercurius integration', async (t) => {
   client.close()
   app.close()
   t.end()
+})
+
+test('subscription client removes a stopped operation without waiting for the server complete', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const started = []
+  let operationId1
+  let operationId2
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      // the server never echoes 'complete'
+      if (data.type !== 'subscribe') {
+        return
+      }
+
+      // the marker subscription is sent last, on the same socket, so every
+      // other start message has arrived before it
+      if (data.payload.query === 'marker') {
+        t.same(started, [operationId1, operationId2])
+        client.close()
+        server.close()
+        t.end()
+        return
+      }
+
+      started.push(data.id)
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    serviceName: 'test-service',
+    connectionCallback: () => {
+      operationId1 = client.createSubscription('query', {}, () => {})
+      client.unsubscribe(operationId1)
+      t.equal(client.operations.has(operationId1), false)
+
+      operationId2 = client.createSubscription('query', {}, () => {})
+      t.not(operationId2, operationId1)
+
+      // force-unsubscribing an unknown operation is a no-op
+      client.unsubscribe('unknown', true)
+      t.equal(client.operations.has(operationId2), true)
+
+      client.createSubscription('marker', {}, () => {})
+    }
+  })
+
+  client.connect()
 })
