@@ -839,3 +839,82 @@ test('mercurius integration', async (t) => {
   app.close()
   t.end()
 })
+
+test('subscription client does not share an operation between different connection init payloads', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+  const started = []
+  let aliceId
+  let bobId
+
+  server.on('connection', function connection (ws) {
+    ws.on('message', function incoming (message, isBinary) {
+      const data = JSON.parse(isBinary ? message : message.toString())
+      if (data.type !== 'subscribe') {
+        return
+      }
+
+      // the marker subscription is sent last, on the same socket, so every
+      // other start message has arrived before it
+      if (data.payload.query === 'marker') {
+        t.same(started, [
+          { id: aliceId, connectionInit: { authorization: 'alice' } },
+          { id: bobId, connectionInit: { authorization: 'bob' } }
+        ])
+        client.close()
+        server.close()
+        t.end()
+        return
+      }
+
+      started.push({ id: data.id, connectionInit: data.extensions[0].payload })
+    })
+
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    serviceName: 'test-service',
+    connectionCallback: () => {
+      const alice = { _connectionInit: { authorization: 'alice' } }
+      const bob = { _connectionInit: { authorization: 'bob' } }
+
+      aliceId = client.createSubscription('query', {}, () => {}, alice)
+      bobId = client.createSubscription('query', {}, () => {}, bob)
+      const aliceAgainId = client.createSubscription('query', {}, () => {}, alice)
+
+      t.not(aliceId, bobId)
+      t.equal(aliceAgainId, aliceId)
+      t.equal(client.operationsCount[aliceId], 2)
+
+      client.createSubscription('marker', {}, () => {})
+    }
+  })
+
+  client.connect()
+})
+
+test('subscription client shares operations by the rewritten connection init payload', (t) => {
+  const server = new WS.Server({ port: 0 })
+  const port = server.address().port
+
+  server.on('connection', function connection (ws) {
+    ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
+  })
+
+  const client = new SubscriptionClient(`ws://localhost:${port}`, {
+    serviceName: 'test-service',
+    rewriteConnectionInitPayload: (_, context) => ({ user: context.user }),
+    connectionCallback: () => {
+      const aliceId = client.createSubscription('query', {}, () => {}, { user: 'alice', _connectionInit: { token: 'a' } })
+      const bobId = client.createSubscription('query', {}, () => {}, { user: 'bob', _connectionInit: { token: 'a' } })
+
+      t.not(aliceId, bobId)
+      client.close()
+      server.close()
+      t.end()
+    }
+  })
+
+  client.connect()
+})
