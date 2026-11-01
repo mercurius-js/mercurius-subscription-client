@@ -263,7 +263,15 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
       if (data.type === 'complete') {
+        // echo 'complete' late, then ping: the client answers the ping only
+        // after it has handled the echoed 'complete'
         ws.send(JSON.stringify({ id: '1', type: 'complete' }))
+        ws.send(JSON.stringify({ type: 'ping' }))
+      } else if (data.type === 'pong') {
+        // the late 'complete' was ignored: publish was not called
+        client.close()
+        server.close()
+        t.end()
       }
     })
 
@@ -289,13 +297,6 @@ test('subscription client multiple subscriptions unsubscribe removes only one su
 
       client.unsubscribe(operationId1)
       t.equal(client.operations.has(operationId1), false)
-
-      // the late 'complete' echoed by the server is ignored
-      setTimeout(() => {
-        client.close()
-        server.close()
-        t.end()
-      }, 50)
     }
   })
 
@@ -851,14 +852,28 @@ test('subscription client removes a stopped operation without waiting for the se
   const server = new WS.Server({ port: 0 })
   const port = server.address().port
   const started = []
+  let operationId1
+  let operationId2
 
   server.on('connection', function connection (ws) {
     ws.on('message', function incoming (message, isBinary) {
       const data = JSON.parse(isBinary ? message : message.toString())
-      if (data.type === 'subscribe') {
-        started.push(data.id)
-      }
       // the server never echoes 'complete'
+      if (data.type !== 'subscribe') {
+        return
+      }
+
+      // the marker subscription is sent last, on the same socket, so every
+      // other start message has arrived before it
+      if (data.payload.query === 'marker') {
+        t.same(started, [operationId1, operationId2])
+        client.close()
+        server.close()
+        t.end()
+        return
+      }
+
+      started.push(data.id)
     })
 
     ws.send(JSON.stringify({ id: undefined, type: 'connection_ack' }))
@@ -867,23 +882,18 @@ test('subscription client removes a stopped operation without waiting for the se
   const client = new SubscriptionClient(`ws://localhost:${port}`, {
     serviceName: 'test-service',
     connectionCallback: () => {
-      const operationId1 = client.createSubscription('query', {}, () => {})
+      operationId1 = client.createSubscription('query', {}, () => {})
       client.unsubscribe(operationId1)
       t.equal(client.operations.has(operationId1), false)
 
-      const operationId2 = client.createSubscription('query', {}, () => {})
+      operationId2 = client.createSubscription('query', {}, () => {})
       t.not(operationId2, operationId1)
 
       // force-unsubscribing an unknown operation is a no-op
       client.unsubscribe('unknown', true)
       t.equal(client.operations.has(operationId2), true)
 
-      setTimeout(() => {
-        t.same(started, [operationId1, operationId2])
-        client.close()
-        server.close()
-        t.end()
-      }, 50)
+      client.createSubscription('marker', {}, () => {})
     }
   })
 
